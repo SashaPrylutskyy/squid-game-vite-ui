@@ -2,8 +2,9 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {useParams, Link} from 'react-router-dom';
 import api from '../../services/api';
+import {useAuth} from '../../contexts/AuthContext.jsx'; // Додаємо імпорт для перевірки ролі
 
-// --- Компонент для керування гравцями (без змін) ---
+// --- Компонент для керування гравцями (Ваша робоча версія, без змін) ---
 const PlayersManager = ({competitionId}) => {
     const [players, setPlayers] = useState([]);
     const [availablePlayers, setAvailablePlayers] = useState([]);
@@ -97,7 +98,7 @@ const PlayersManager = ({competitionId}) => {
     );
 };
 
-// --- Компонент для керування раундами (без змін) ---
+// --- Компонент для керування раундами (Ваша робоча версія, без змін) ---
 const RoundsManager = ({competitionId, onRoundsCreated}) => {
     const [allGames, setAllGames] = useState([]);
     const [selectedGames, setSelectedGames] = useState([]);
@@ -153,9 +154,97 @@ const RoundsManager = ({competitionId, onRoundsCreated}) => {
     );
 };
 
+// --- НОВИЙ, ІЗОЛЬОВАНИЙ КОМПОНЕНТ ДЛЯ ПІДТВЕРДЖЕННЯ ---
+const ConfirmationManager = ({round}) => {
+    const [reportedPlayers, setReportedPlayers] = useState([]);
+    const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-// --- Компонент Керування Ігровим Процесом (ОНОВЛЕНО) ---
+    // Функція для завантаження звітів
+    const fetchReportedPlayers = async () => {
+        if (!round) return;
+        setLoading(true);
+        setError('');
+        try {
+            const response = await api.get(`/round_result/${round.id}/reported`);
+            setReportedPlayers(response.data.players || []);
+            setSelectedPlayerIds([]); // Скидаємо вибір
+        } catch (err) {
+            setError(err.response?.data?.error || "Не вдалося завантажити звіти.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Функція для підтвердження/відхилення
+    const handleConfirmation = async (isValid) => {
+        if (selectedPlayerIds.length === 0) {
+            alert("Оберіть гравців для дії.");
+            return;
+        }
+        try {
+            await api.patch('/round_result/confirmation', {
+                isValid,
+                roundId: round.id,
+                playerIds: selectedPlayerIds,
+            });
+            alert(`Дію для ${selectedPlayerIds.length} гравців виконано.`);
+            fetchReportedPlayers(); // Оновлюємо список
+        } catch (err) {
+            alert(err.response?.data?.error || "Помилка підтвердження.");
+        }
+    };
+
+    return (
+        <div style={{borderTop: '2px solid blue', marginTop: '15px', paddingTop: '15px'}}>
+            <h4>Підтвердження Результатів Раунду</h4>
+            <button onClick={fetchReportedPlayers} disabled={loading}>
+                {loading ? "Завантаження..." : "Переглянути звіти Працівників"}
+            </button>
+            {error && <p style={{color: 'red'}}>{error}</p>}
+
+            {reportedPlayers.length > 0 && (
+                <div style={{marginTop: '10px'}}>
+                    <table border="1" style={{width: '100%', borderCollapse: 'collapse'}}>
+                        <thead>
+                        <tr>
+                            <th>Обрати</th>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Статус (від Worker)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {reportedPlayers.map(p => (
+                            <tr key={p.id}>
+                                <td style={{textAlign: 'center'}}><input type="checkbox" onChange={() => {
+                                    setSelectedPlayerIds(ids => ids.includes(p.id) ? ids.filter(id => id !== p.id) : [...ids, p.id]);
+                                }}/></td>
+                                <td>{p.id}</td>
+                                <td>{p.email}</td>
+                                <td style={{
+                                    fontWeight: 'bold',
+                                    color: p.status === 'PASSED' ? 'green' : 'red'
+                                }}>{p.status}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    <div style={{marginTop: '10px', display: 'flex', gap: '10px'}}>
+                        <button onClick={() => handleConfirmation(true)}>Підтвердити обраних</button>
+                        <button onClick={() => handleConfirmation(false)}>Відхилити обраних</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+// --- Компонент Керування Ігровим Процесом (З ДОДАВАННЯМ) ---
 const GameFlowManager = ({competitionId}) => {
+    const {user} = useAuth(); // Отримуємо дані про користувача
     const [competitionStatus, setCompetitionStatus] = useState(null);
     const [rounds, setRounds] = useState([]);
     const [currentRound, setCurrentRound] = useState(null);
@@ -185,11 +274,11 @@ const GameFlowManager = ({competitionId}) => {
         fetchData();
     }, [fetchData]);
 
-    const handleStartCompetition = async () => { /* ... код без змін ... */
+    const handleStartCompetition = async () => { /* ... Ваша реалізація ... */
     };
-    const handleStartNextRound = async () => { /* ... код без змін ... */
+    const handleStartNextRound = async () => { /* ... Ваша реалізація ... */
     };
-    const handleEndCurrentRound = async () => { /* ... код без змін ... */
+    const handleEndCurrentRound = async () => { /* ... Ваша реалізація ... */
     };
 
     if (loading) return <div>Завантаження стану гри...</div>;
@@ -197,14 +286,11 @@ const GameFlowManager = ({competitionId}) => {
     return (
         <div style={{border: '1px solid #ccc', padding: '20px', marginTop: '20px', backgroundColor: '#f9f9f9'}}>
             <h2>Панель Керування Грою</h2>
-
             <div style={{display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '20px'}}>
                 <div>Статус змагання: <strong>{competitionStatus || 'PENDING'}</strong></div>
                 <button onClick={handleStartCompetition}>Розпочати змагання</button>
             </div>
-
             <hr/>
-
             <h3>Список Раундів</h3>
             {rounds.length > 0 ? (
                 <table border="1" style={{width: '100%', borderCollapse: 'collapse'}}>
@@ -216,29 +302,29 @@ const GameFlowManager = ({competitionId}) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {/* --- ЗМІНИ ТУТ --- */}
-                    {rounds.map((r, index) => ( // Додаємо index для нумерації
-                        <tr key={r.id}>
-                            <td style={{padding: '8px', textAlign: 'center'}}>{index + 1}</td>
-                            {/* Використовуємо index + 1 */}
-                            <td style={{padding: '8px'}}>{r.title}</td>
-                            {/* Використовуємо прямий доступ до title */}
-                            <td style={{padding: '8px'}}>{r.status}</td>
-                        </tr>
-                    ))}
+                    {rounds.map((r, index) => (<tr key={r.id}>
+                        <td style={{padding: '8px', textAlign: 'center'}}>{index + 1}</td>
+                        <td style={{padding: '8px'}}>{r.title}</td>
+                        <td style={{padding: '8px'}}>{r.status}</td>
+                    </tr>))}
                     </tbody>
                 </table>
             ) : <p>Раундів ще не створено або не вдалося завантажити.</p>}
-
             <hr/>
-
             <h3>Керування Раундами</h3>
             <div style={{display: 'flex', justifyContent: 'space-between', gap: '15px'}}>
                 <div style={{flex: 1}}>
                     <h4>Поточний раунд</h4>
-                    {currentRound ? <p>Раунд #{currentRound.roundNumber} (Статус: {currentRound.status})</p> :
-                        <p>Немає активного раунду.</p>}
-                    <button onClick={handleEndCurrentRound} disabled={!currentRound}>Завершити поточний раунд</button>
+                    {currentRound ? (
+                        <>
+                            <p>Раунд #{currentRound.roundNumber} (Статус: {currentRound.status})</p>
+                            <button onClick={handleEndCurrentRound} disabled={!currentRound}>Завершити поточний раунд
+                            </button>
+
+                            {/* --- ЗМІНА ТУТ: ДОДАЄМО НОВИЙ КОМПОНЕНТ ТІЛЬКИ ДЛЯ FRONTMAN --- */}
+                            {user.role === 'FRONTMAN' && <ConfirmationManager round={currentRound}/>}
+                        </>
+                    ) : <p>Немає активного раунду.</p>}
                 </div>
                 <div style={{flex: 1}}>
                     <h4>Наступний раунд</h4>
@@ -251,7 +337,7 @@ const GameFlowManager = ({competitionId}) => {
 };
 
 
-// --- Основний компонент сторінки (без змін) ---
+// --- Основний компонент сторінки (Ваша робоча версія, без змін) ---
 const CompetitionDetailPage = () => {
     const {id} = useParams();
     const [gameFlowKey, setGameFlowKey] = useState(Date.now());
