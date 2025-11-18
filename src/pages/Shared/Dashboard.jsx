@@ -11,7 +11,8 @@ const Dashboard = () => {
     const canManageCompetitions = ['HOST', 'FRONTMAN'].includes(user?.role);
     const isPlayer = user?.role === 'PLAYER';
     const isWorker = user?.role === 'WORKER';
-    // Додайте інші ролі тут, якщо потрібно (наприклад, isVip, isSalesman)
+    const isSalesman = user?.role === 'SALESMAN';
+    const isVip = user?.role === 'VIP';
 
     return (
         <div style={{padding: '20px', maxWidth: '800px', margin: 'auto'}}>
@@ -53,8 +54,13 @@ const Dashboard = () => {
                         <Link to="/my-tasks">Мої завдання</Link>
                     )}
 
-                    {/* Тут будуть посилання для інших ролей, наприклад, VIP або SALESMAN */}
+                    {isSalesman && (
+                        <Link to="/referral">Мій реферальний код</Link>
+                    )}
 
+                    {isVip && (
+                        <Link to="/invest">Зробити внесок</Link>
+                    )}
                 </nav>
             </main>
         </div>

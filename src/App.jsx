@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-import {Routes, Route, Navigate, Link} from 'react-router-dom'; // Додано Link
+import {Routes, Route, Navigate, Link} from 'react-router-dom';
 import {useAuth} from './contexts/AuthContext.jsx';
 
 // Компоненти для захисту маршрутів
@@ -26,6 +26,8 @@ import StaffPage from './pages/Host/StaffPage.jsx';
 // Сторінки для специфічних ролей
 import PlayerDashboard from './pages/Player/PlayerDashboard.jsx';
 import WorkerDashboard from './pages/Worker/WorkerDashboard.jsx';
+import SalesmanDashboard from './pages/Salesman/SalesmanDashboard.jsx';
+import VipDashboard from './pages/Vip/VipDashboard.jsx';
 
 
 function App() {
@@ -48,7 +50,6 @@ function App() {
             {/* ====================================================== */}
             <Route path="/" element={<ProtectedRoute/>}>
 
-                {/* Загальний дашборд, доступний усім авторизованим */}
                 <Route path="/dashboard" element={<Dashboard/>}/>
 
                 {/* --- Маршрути для Керівництва (HOST, FRONTMAN, MANAGER, THE_OFFICER) --- */}
@@ -72,10 +73,18 @@ function App() {
                     <Route path="/my-tasks" element={<WorkerDashboard/>}/>
                 </Route>
 
-                {/* Перенаправлення з кореневого шляху на дашборд */}
+                {/* --- Маршрути для Продавця (SALESMAN) --- */}
+                <Route element={<RoleGuard roles={['SALESMAN']}/>}>
+                    <Route path="/referral" element={<SalesmanDashboard/>}/>
+                </Route>
+
+                {/* --- Маршрути для VIP --- */}
+                <Route element={<RoleGuard roles={['VIP']}/>}>
+                    <Route path="/invest" element={<VipDashboard/>}/>
+                </Route>
+
                 <Route path="/" element={<Navigate to="/dashboard" exact/>}/>
 
-                {/* Сторінка "Не знайдено" для всіх інших шляхів */}
                 <Route path="*" element={
                     <div style={{textAlign: 'center', marginTop: '50px'}}>
                         <h1>404 - Сторінку не знайдено</h1>
