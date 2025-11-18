@@ -13,14 +13,13 @@ const PlayerDashboard = () => {
         setError('');
         try {
             // ===================================================================
-            // УВАГА: ЦЕЙ ENDPOINT ПОТРІБНО СТВОРИТИ НА БЕКЕНДІ
-            // Без нього цей компонент не буде працювати коректно.
+            // УВАГА: ЦЕЙ ENDPOINT МАЄ ІСНУВАТИ НА БЕКЕНДІ
             // ===================================================================
             const response = await api.get('/users/player/status');
             setPlayerStatus(response.data);
         } catch (err) {
             console.error("Помилка завантаження статусу гравця:", err);
-            const errorMessage = err.response?.data?.error || "Не вдалося завантажити ваш статус.";
+            const errorMessage = err.response?.data?.error || "Не вдалося завантажити ваш статус. Можливо, ви ще не в грі.";
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -38,6 +37,8 @@ const PlayerDashboard = () => {
             return;
         }
 
+        // Блокуємо кнопки, щоб уникнути подвійних натискань
+        setLoading(true);
         try {
             // Використовуємо існуючий ендпоінт для голосування
             await api.post(`/voting/${roundId}/vote/${isQuit}`);
@@ -48,11 +49,14 @@ const PlayerDashboard = () => {
             console.error("Помилка голосування:", err);
             const errorMessage = err.response?.data?.error || "Не вдалося проголосувати.";
             alert(`Помилка: ${errorMessage}`);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <div>Завантаження вашого статусу...</div>;
+    if (loading && !playerStatus) return <div>Завантаження вашого статусу...</div>;
 
+    // Словник для красивого відображення статусів
     const statusStyles = {
         ALIVE: {color: 'green', text: 'Живий'},
         ELIMINATED: {color: 'red', text: 'Вибув'},
@@ -60,8 +64,8 @@ const PlayerDashboard = () => {
         NOT_IN_GAME: {color: 'gray', text: 'Не в грі'}
     };
 
-    const currentStatus = playerStatus?.statusInCompetition || 'NOT_IN_GAME';
-    const displayStatus = statusStyles[currentStatus] || statusStyles.NOT_IN_GAME;
+    const currentStatusKey = playerStatus?.statusInCompetition || 'NOT_IN_GAME';
+    const displayStatus = statusStyles[currentStatusKey] || statusStyles.NOT_IN_GAME;
 
     return (
         <div style={{padding: '20px', maxWidth: '800px', margin: 'auto'}}>
@@ -70,6 +74,7 @@ const PlayerDashboard = () => {
 
             {error && <p style={{color: 'red', border: '1px solid red', padding: '10px'}}>{error}</p>}
 
+            {/* Показуємо контент тільки якщо немає глобальної помилки */}
             {!error && playerStatus && (
                 <div>
                     {/* --- Блок загального статусу --- */}
@@ -77,7 +82,8 @@ const PlayerDashboard = () => {
                         <h2>Загальний Статус</h2>
                         <p>Змагання: <strong>{playerStatus.competition?.title || 'Ви не берете участі у змаганні'}</strong>
                         </p>
-                        <p>Ваш статус: <strong style={{color: displayStatus.color}}>{displayStatus.text}</strong></p>
+                        <p>Ваш статус: <strong
+                            style={{color: displayStatus.color, fontSize: '1.2em'}}>{displayStatus.text}</strong></p>
                     </div>
 
                     {/* --- Блок поточного раунду --- */}
@@ -91,32 +97,50 @@ const PlayerDashboard = () => {
 
                     {/* --- Блок голосування --- */}
                     {playerStatus.activeVote?.canVote && (
-                        <div style={{border: '1px solid #007bff', padding: '20px', backgroundColor: '#f0f8ff'}}>
-                            <h2>Голосування Відкрито!</h2>
+                        <div style={{
+                            border: '2px solid #007bff',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            backgroundColor: '#f0f8ff'
+                        }}>
+                            <h2 style={{textAlign: 'center', marginTop: 0}}>Відкрито Голосування!</h2>
                             {playerStatus.activeVote.hasVoted ? (
-                                <p style={{color: 'green', fontWeight: 'bold'}}>Дякуємо, ви вже проголосували в цьому
-                                    раунді.</p>
+                                <p style={{color: 'green', fontWeight: 'bold', textAlign: 'center'}}>Дякуємо, ви вже
+                                    проголосували в цьому раунді.</p>
                             ) : (
                                 <>
-                                    <p>Бажаєте продовжити гру чи покинути її?</p>
+                                    <p style={{textAlign: 'center'}}>Ваша доля у ваших руках. Бажаєте продовжити гру чи
+                                        покинути її?</p>
                                     <div style={{display: 'flex', gap: '20px', marginTop: '15px'}}>
-                                        <button onClick={() => handleVote(false)} style={{
-                                            flex: 1,
-                                            padding: '15px',
-                                            cursor: 'pointer',
-                                            backgroundColor: 'lightgreen',
-                                            border: '1px solid green'
-                                        }}>
-                                            Продовжити Гру
+                                        <button
+                                            onClick={() => handleVote(false)}
+                                            disabled={loading}
+                                            style={{
+                                                flex: 1,
+                                                padding: '15px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#28a745',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '5px',
+                                                fontSize: '16px'
+                                            }}>
+                                            {loading ? '...' : 'Продовжити Гру'}
                                         </button>
-                                        <button onClick={() => handleVote(true)} style={{
-                                            flex: 1,
-                                            padding: '15px',
-                                            cursor: 'pointer',
-                                            backgroundColor: 'lightcoral',
-                                            border: '1px solid red'
-                                        }}>
-                                            Покинути Гру
+                                        <button
+                                            onClick={() => handleVote(true)}
+                                            disabled={loading}
+                                            style={{
+                                                flex: 1,
+                                                padding: '15px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#dc3545',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '5px',
+                                                fontSize: '16px'
+                                            }}>
+                                            {loading ? '...' : 'Покинути Гру'}
                                         </button>
                                     </div>
                                 </>
