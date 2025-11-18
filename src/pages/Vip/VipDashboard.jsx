@@ -4,7 +4,8 @@ import {Link} from 'react-router-dom';
 import api from '../../services/api';
 
 const VipDashboard = () => {
-    const [competitions, setCompetitions] = useState([]);
+    const [allCompetitions, setAllCompetitions] = useState([]);
+    const [fundedCompetitions, setFundedCompetitions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -15,15 +16,25 @@ const VipDashboard = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await api.get('/competition');
-            const activeCompetitions = response.data.filter(c => c.status === 'PENDING' || c.status === 'ACTIVE');
-            setCompetitions(activeCompetitions);
-            if (activeCompetitions.length > 0) {
-                setSelectedCompetition(activeCompetitions[0].id);
+            const allCompetitionsResponse = await api.get('/competition/list-all');
+            const competitionsData = allCompetitionsResponse.data;
+
+            // --- ЗМІНА ТУТ: ВИДАЛЕНО ФІЛЬТРАЦІЮ ---
+            // Тепер ми використовуємо весь список, який прийшов з бекенду.
+            setAllCompetitions(competitionsData);
+
+            // Встановлюємо перше змагання як обране за замовчуванням, якщо список не порожній
+            if (competitionsData.length > 0) {
+                setSelectedCompetition(competitionsData[0].id);
             }
+
+            // Запит на отримання історії внесків (без змін)
+            const fundedResponse = await api.get('/transaction/my-deposits');
+            setFundedCompetitions(fundedResponse.data);
+
         } catch (err) {
-            console.error("Помилка завантаження змагань:", err);
-            setError(err.response?.data?.error || "Не вдалося завантажити список змагань.");
+            console.error("Помилка завантаження даних:", err);
+            setError(err.response?.data?.error || "Не вдалося завантажити дані.");
         } finally {
             setLoading(false);
         }
@@ -47,6 +58,7 @@ const VipDashboard = () => {
             });
             alert(`Внесок у розмірі ${amount} успішно зроблено!`);
             setAmount('');
+            fetchData();
         } catch (err) {
             console.error("Помилка при здійсненні внеску:", err);
             alert(err.response?.data?.error || "Сталася помилка.");
@@ -62,12 +74,8 @@ const VipDashboard = () => {
 
             {error && <p style={{color: 'red', border: '1px solid red', padding: '10px'}}>{error}</p>}
 
-            {!error && competitions.length === 0 && !loading && (
-                <p>Наразі немає активних змагань для інвестування.</p>
-            )}
-
-            {!error && competitions.length > 0 && (
-                <div style={{border: '1px solid #ccc', padding: '20px'}}>
+            {!error && allCompetitions.length > 0 ? (
+                <div style={{border: '1px solid #ccc', padding: '20px', marginBottom: '30px'}}>
                     <h2>Зробити Внесок</h2>
                     <form onSubmit={handleDepositSubmit}>
                         <div style={{marginBottom: '15px'}}>
@@ -77,9 +85,10 @@ const VipDashboard = () => {
                                 onChange={e => setSelectedCompetition(e.target.value)}
                                 style={{width: '100%', padding: '10px', marginTop: '5px'}}
                             >
-                                {competitions.map(c => (
+                                {allCompetitions.map(c => (
+                                    // --- ЗМІНА ТУТ: НОВИЙ ФОРМАТ ВІДОБРАЖЕННЯ ---
                                     <option key={c.id} value={c.id}>
-                                        {c.title} (Статус: {c.status})
+                                        {`${c.createdBy.email} | ${c.title} (Статус: ${c.status})`}
                                     </option>
                                 ))}
                             </select>
@@ -101,7 +110,37 @@ const VipDashboard = () => {
                         </button>
                     </form>
                 </div>
+            ) : (
+                !error && !loading && <p>Наразі немає активних змагань для інвестування.</p>
             )}
+
+            <div>
+                <h2>Ваші Інвестиції</h2>
+                {!error && fundedCompetitions.length > 0 ? (
+                    <table border="1" style={{width: '100%', borderCollapse: 'collapse'}}>
+                        <thead>
+                        <tr style={{backgroundColor: '#f2f2f2'}}>
+                            <th style={{padding: '10px'}}>Змагання</th>
+                            <th style={{padding: '10px'}}>Сума</th>
+                            <th style={{padding: '10px'}}>Дата</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {fundedCompetitions.map(tx => (
+                            <tr key={tx.id}>
+                                <td style={{padding: '10px'}}>{tx.competition.title}</td>
+                                <td style={{padding: '10px'}}>{tx.amount.toLocaleString()}</td>
+                                <td style={{padding: '10px'}}>{new Date(tx.createdAt).toLocaleString()}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    !error && !loading &&
+                    <p>Ви ще не зробили жодних внесків. Секція з'явиться тут, щойно ви створите ендпоінт
+                        /api/transaction/my-deposits.</p>
+                )}
+            </div>
         </div>
     );
 };
