@@ -5,30 +5,56 @@ import {useAuth} from '../../contexts/AuthContext.jsx';
 
 const Dashboard = () => {
     const {user, logout} = useAuth();
+
+    // Визначаємо, які ролі мають доступ до яких розділів
     const canManageStaff = ['HOST', 'FRONTMAN', 'MANAGER', 'THE_OFFICER'].includes(user?.role);
     const canManageCompetitions = ['HOST', 'FRONTMAN'].includes(user?.role);
+    const isPlayer = user?.role === 'PLAYER';
+    const isWorker = user?.role === 'WORKER';
+    // Додайте інші ролі тут, якщо потрібно (наприклад, isVip, isSalesman)
 
     return (
         <div style={{padding: '20px', maxWidth: '800px', margin: 'auto'}}>
-            <header style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <header style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #ccc',
+                paddingBottom: '10px'
+            }}>
                 <h1>Вітаємо, {user?.email}!</h1>
-                <button onClick={logout}>Вийти</button>
+                <button onClick={logout} style={{padding: '8px 15px', cursor: 'pointer'}}>Вийти</button>
             </header>
-            <p>Ваша роль: <strong>{user?.role}</strong></p>
+            <p style={{marginTop: '20px'}}>Ваша роль: <strong>{user?.role}</strong></p>
 
-            <main>
+            <main style={{marginTop: '30px'}}>
                 <h2>Доступні дії:</h2>
-                <nav style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                <nav style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '15px',
+                    fontSize: '18px'
+                }}>
+                    {/* Показуємо посилання тільки якщо користувач має відповідну роль */}
+
                     {canManageCompetitions && (
                         <Link to="/competitions">Керування змаганнями</Link>
                     )}
-                    {/* --- НОВЕ ПОСИЛАННЯ --- */}
+
                     {canManageStaff && (
                         <Link to="/staff">Керування персоналом</Link>
                     )}
-                    {user?.role === 'PLAYER' && (
+
+                    {isPlayer && (
                         <Link to="/my-game">Мій статус у грі</Link>
                     )}
+
+                    {isWorker && (
+                        <Link to="/my-tasks">Мої завдання</Link>
+                    )}
+
+                    {/* Тут будуть посилання для інших ролей, наприклад, VIP або SALESMAN */}
+
                 </nav>
             </main>
         </div>
