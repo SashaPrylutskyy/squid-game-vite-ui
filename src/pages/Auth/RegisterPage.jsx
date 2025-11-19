@@ -1,7 +1,8 @@
 // src/pages/Auth/RegisterPage.jsx
-import React, {useState} from 'react';
-import {useNavigate, Link} from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
+import retroTheme from '../../styles/retroTheme';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
@@ -9,7 +10,7 @@ const RegisterPage = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        role: 'HOST', // Роль за замовчуванням
+        role: 'HOST',
         firstName: '',
         lastName: '',
         birthday: '',
@@ -20,7 +21,7 @@ const RegisterPage = () => {
     const [success, setSuccess] = useState('');
 
     const handleChange = (e) => {
-        setFormData({...formData, [e.target.name]: e.target.value});
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
@@ -29,80 +30,152 @@ const RegisterPage = () => {
         setSuccess('');
         try {
             await api.post('/auth/register', formData);
-            setSuccess('Реєстрація успішна! Тепер ви можете увійти в систему.');
+            setSuccess('Registration successful! Redirecting to login...');
             setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
-            const errorMessage = err.response?.data?.error || "Помилка реєстрації. Перевірте введені дані.";
+            const errorMessage = err.response?.data?.error || "Registration failed. Please check your inputs.";
             setError(errorMessage);
             console.error(err);
         }
     };
 
     if (success) {
-        return <div style={{padding: '50px', color: 'green', textAlign: 'center'}}>{success}</div>;
+        return (
+            <div style={retroTheme.common.pageContainer}>
+                <div style={{ padding: '50px', textAlign: 'center' }}>
+                    <div style={{
+                        ...retroTheme.common.card,
+                        maxWidth: '400px',
+                        margin: 'auto',
+                        backgroundColor: '#e8f5e9',
+                        borderColor: 'green'
+                    }}>
+                        <h3 style={{ color: 'green' }}>SUCCESS</h3>
+                        <p>{success}</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div style={{padding: '50px', maxWidth: '500px', margin: 'auto'}}>
-            <h1>Реєстрація HOST / VIP</h1>
-            <form onSubmit={handleSubmit}>
-                {/* Всі поля аналогічні до сторінки AcceptOfferPage */}
-                <div style={{marginBottom: '15px'}}>
-                    <label>Email</label>
-                    <input type="email" name="email" onChange={handleChange} required
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Пароль</label>
-                    <input type="password" name="password" onChange={handleChange} required
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Роль</label>
-                    <select name="role" value={formData.role} onChange={handleChange}
-                            style={{width: '100%', padding: '8px'}}>
-                        <option value="HOST">HOST</option>
-                        <option value="VIP">VIP</option>
-                    </select>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Ім'я</label>
-                    <input type="text" name="firstName" onChange={handleChange} required
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Прізвище</label>
-                    <input type="text" name="lastName" onChange={handleChange} required
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Дата народження</label>
-                    <input type="date" name="birthday" onChange={handleChange} required
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Стать</label>
-                    <select name="sex" value={formData.sex} onChange={handleChange}
-                            style={{width: '100%', padding: '8px'}}>
-                        <option value="MALE">Чоловік</option>
-                        <option value="FEMALE">Жінка</option>
-                    </select>
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Фото профілю (URL)</label>
-                    <input type="text" name="profilePhoto" onChange={handleChange}
-                           style={{width: '100%', padding: '8px'}}/>
-                </div>
+        <div style={retroTheme.common.pageContainer}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                paddingTop: '50px',
+                paddingBottom: '50px'
+            }}>
+                <div style={{
+                    ...retroTheme.common.card,
+                    width: '450px',
+                    padding: '0',
+                    backgroundColor: retroTheme.colors.contentBackground
+                }}>
+                    <div style={{
+                        backgroundColor: retroTheme.colors.sectionHeaderBg,
+                        padding: '5px 10px',
+                        borderBottom: `1px solid ${retroTheme.colors.borderLight} `,
+                        fontWeight: 'bold',
+                        fontSize: retroTheme.fonts.size.large,
+                        color: retroTheme.colors.text,
+                        display: 'flex',
+                        justifyContent: 'space-between'
+                    }}>
+                        <span>NEW USER REGISTRATION</span>
+                        <Link to="/login" style={{ textDecoration: 'none', color: retroTheme.colors.textLight }}>x</Link>
+                    </div>
 
-                {error && <p style={{color: 'red'}}>{error}</p>}
+                    <div style={{ padding: '20px' }}>
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={labelStyle}>ACCOUNT TYPE</label>
+                                <select name="role" value={formData.role} onChange={handleChange} style={retroTheme.common.input}>
+                                    <option value="HOST">HOST (Game Master)</option>
+                                    <option value="VIP">VIP (Observer)</option>
+                                </select>
+                            </div>
 
-                <button type="submit" style={{width: '100%', padding: '12px'}}>Зареєструватися</button>
-            </form>
-            <div style={{textAlign: 'center', marginTop: '20px'}}>
-                <p>Вже є акаунт? <Link to="/login">Увійти</Link></p>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ flex: 1, marginBottom: '15px' }}>
+                                    <label style={labelStyle}>FIRST NAME</label>
+                                    <input type="text" name="firstName" onChange={handleChange} required style={retroTheme.common.input} />
+                                </div>
+                                <div style={{ flex: 1, marginBottom: '15px' }}>
+                                    <label style={labelStyle}>LAST NAME</label>
+                                    <input type="text" name="lastName" onChange={handleChange} required style={retroTheme.common.input} />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={labelStyle}>EMAIL ADDRESS</label>
+                                <input type="email" name="email" onChange={handleChange} required style={retroTheme.common.input} />
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={labelStyle}>PASSWORD</label>
+                                <input type="password" name="password" onChange={handleChange} required style={retroTheme.common.input} />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ flex: 1, marginBottom: '15px' }}>
+                                    <label style={labelStyle}>BIRTHDAY</label>
+                                    <input type="date" name="birthday" onChange={handleChange} required style={retroTheme.common.input} />
+                                </div>
+                                <div style={{ flex: 1, marginBottom: '15px' }}>
+                                    <label style={labelStyle}>SEX</label>
+                                    <select name="sex" value={formData.sex} onChange={handleChange} style={retroTheme.common.input}>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={labelStyle}>PROFILE PHOTO URL</label>
+                                <input type="text" name="profilePhoto" onChange={handleChange} style={retroTheme.common.input} placeholder="http://..." />
+                            </div>
+
+                            {error && (
+                                <div style={{
+                                    color: retroTheme.colors.error,
+                                    marginBottom: '15px',
+                                    fontSize: retroTheme.fonts.size.small,
+                                    textAlign: 'center',
+                                    border: '1px dashed red',
+                                    padding: '5px'
+                                }}>
+                                    [!] {error}
+                                </div>
+                            )}
+
+                            <button type="submit" style={{ ...retroTheme.common.button, width: '100%' }}>
+                                REGISTER ACCOUNT
+                            </button>
+                        </form>
+                    </div>
+
+                    <div style={{
+                        backgroundColor: '#f9f9f9',
+                        borderTop: `1px solid ${retroTheme.colors.borderLight} `,
+                        padding: '10px',
+                        textAlign: 'center',
+                        fontSize: retroTheme.fonts.size.small
+                    }}>
+                        Already have an account? <Link to="/login" style={retroTheme.common.link}>Login here</Link>
+                    </div>
+                </div>
             </div>
         </div>
     );
+};
+
+const labelStyle = {
+    display: 'block',
+    marginBottom: '3px',
+    fontWeight: 'bold',
+    fontSize: retroTheme.fonts.size.small,
+    color: retroTheme.colors.textLight
 };
 
 export default RegisterPage;

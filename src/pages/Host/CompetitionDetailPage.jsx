@@ -3,8 +3,50 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import retroTheme from '../../styles/retroTheme';
 
-// --- Компонент для керування гравцями (Ваша робоча версія, без змін) ---
+// --- Shared Retro Components ---
+const RetroSection = ({ title, children }) => (
+    <div style={{ ...retroTheme.common.card, marginBottom: '20px' }}>
+        <div style={{
+            backgroundColor: retroTheme.colors.sectionHeaderBg,
+            padding: '5px 10px',
+            borderBottom: `1px solid ${retroTheme.colors.borderLight}`,
+            fontWeight: 'bold',
+            marginBottom: '15px',
+            fontSize: retroTheme.fonts.size.large,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+        }}>
+            {title}
+        </div>
+        <div style={{ padding: '10px' }}>
+            {children}
+        </div>
+    </div>
+);
+
+const RetroButton = ({ onClick, disabled, children, variant = 'normal' }) => {
+    let style = { ...retroTheme.common.button };
+    if (variant === 'danger') {
+        style = { ...style, color: 'red', borderColor: '#ffcccc', backgroundColor: '#fff5f5' };
+    } else if (variant === 'primary') {
+        style = { ...style, fontWeight: 'bold', border: '2px solid #999' };
+    }
+
+    if (disabled) {
+        style = { ...style, opacity: 0.5, cursor: 'not-allowed' };
+    }
+
+    return (
+        <button onClick={onClick} disabled={disabled} style={style}>
+            {children}
+        </button>
+    );
+};
+
+// --- Players Manager ---
 const PlayersManager = ({ competitionId }) => {
     const [players, setPlayers] = useState([]);
     const [availablePlayers, setAvailablePlayers] = useState([]);
@@ -19,7 +61,7 @@ const PlayersManager = ({ competitionId }) => {
             const availablePlayersResponse = await api.get('/users?role=PLAYER&isAssigned=false');
             setAvailablePlayers(availablePlayersResponse.data);
         } catch (err) {
-            console.error("Помилка завантаження даних гравців:", err);
+            console.error("Error loading players:", err);
         } finally {
             setLoading(false);
         }
@@ -36,69 +78,78 @@ const PlayersManager = ({ competitionId }) => {
             fetchPlayersData();
             setSelectedPlayers([]);
         } catch (err) {
-            alert('Помилка додавання гравців.');
+            alert('Error adding players.');
         }
     };
 
     const handleRemovePlayer = async (playerId) => {
-        if (!window.confirm(`Видалити гравця ${playerId}?`)) return;
+        if (!window.confirm(`Remove player ${playerId}?`)) return;
         try {
             await api.delete('/assignment', { data: { competitionId: Number(competitionId), playerIds: [playerId] } });
             fetchPlayersData();
         } catch (err) {
-            alert('Помилка видалення гравця.');
+            alert('Error removing player.');
         }
     };
 
-    if (loading) return <div>Завантаження гравців...</div>;
+    if (loading) return <div>Loading player database...</div>;
 
     return (
-        <div style={{ border: '1px solid #ccc', padding: '20px', marginTop: '20px' }}>
-            <h2>Гравці у змаганні ({players.length})</h2>
-            <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Ім'я</th>
-                        <th>Статус</th>
-                        <th>Дії</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {players.length > 0 ? players.map(p => (
-                        <tr key={p.id}>
-                            <td>{p.id}</td>
-                            <td>{p.email}</td>
-                            <td>{p.firstName} {p.lastName}</td>
-                            <td>{p.status}</td>
-                            <td>
-                                <button onClick={() => handleRemovePlayer(p.id)} style={{ color: 'red' }}>Видалити</button>
-                            </td>
+        <RetroSection title={`PLAYER DATABASE (${players.length})`}>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', border: `1px solid ${retroTheme.colors.borderLight}`, marginBottom: '20px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: retroTheme.fonts.size.small }}>
+                    <thead>
+                        <tr style={{ backgroundColor: '#eee', position: 'sticky', top: 0 }}>
+                            <th style={thStyle}>ID</th>
+                            <th style={thStyle}>EMAIL</th>
+                            <th style={thStyle}>NAME</th>
+                            <th style={thStyle}>STATUS</th>
+                            <th style={thStyle}>ACTION</th>
                         </tr>
-                    )) : <tr>
-                        <td colSpan="5" style={{ textAlign: 'center' }}>Гравців не додано.</td>
-                    </tr>}
-                </tbody>
-            </table>
-            <hr style={{ margin: '30px 0' }} />
-            <h3>Додати гравців</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <select multiple value={selectedPlayers}
-                    onChange={(e) => setSelectedPlayers(Array.from(e.target.selectedOptions, option => Number(option.value)))}
-                    style={{ width: '100%', minHeight: '150px' }}>
-                    {availablePlayers.length > 0
-                        ? availablePlayers.map(p => <option key={p.id}
-                            value={p.id}>{p.firstName} {p.lastName} ({p.email})</option>)
-                        : <option disabled>Немає вільних гравців</option>}
-                </select>
-                <button onClick={handleAddPlayers} style={{ padding: '10px 20px', alignSelf: 'center' }}>Додати</button>
+                    </thead>
+                    <tbody>
+                        {players.length > 0 ? players.map(p => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={tdStyle}>#{p.id}</td>
+                                <td style={tdStyle}>{p.email}</td>
+                                <td style={tdStyle}>{p.firstName} {p.lastName}</td>
+                                <td style={tdStyle}>
+                                    <span style={{
+                                        color: p.status === 'ALIVE' ? 'green' : 'red',
+                                        fontWeight: 'bold'
+                                    }}>{p.status}</span>
+                                </td>
+                                <td style={tdStyle}>
+                                    <RetroButton onClick={() => handleRemovePlayer(p.id)} variant="danger">EJECT</RetroButton>
+                                </td>
+                            </tr>
+                        )) : <tr><td colSpan="5" style={{ padding: '10px', textAlign: 'center' }}>No players registered.</td></tr>}
+                    </tbody>
+                </table>
             </div>
-        </div>
+
+            <div style={{ backgroundColor: '#f9f9f9', padding: '10px', border: `1px solid ${retroTheme.colors.borderLight}` }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '5px', fontSize: retroTheme.fonts.size.small }}>ADD NEW PLAYERS</div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <select multiple value={selectedPlayers}
+                        onChange={(e) => setSelectedPlayers(Array.from(e.target.selectedOptions, option => Number(option.value)))}
+                        style={{ ...retroTheme.common.input, height: '100px', flex: 1 }}>
+                        {availablePlayers.length > 0
+                            ? availablePlayers.map(p => <option key={p.id} value={p.id}>{p.firstName} {p.lastName} ({p.email})</option>)
+                            : <option disabled>No available players found</option>}
+                    </select>
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <RetroButton onClick={handleAddPlayers} disabled={selectedPlayers.length === 0}>
+                            &lt;&lt; ASSIGN
+                        </RetroButton>
+                    </div>
+                </div>
+            </div>
+        </RetroSection>
     );
 };
 
-// --- Компонент для керування раундами (Ваша робоча версія, без змін) ---
+// --- Rounds Manager ---
 const RoundsManager = ({ competitionId, onRoundsCreated }) => {
     const [allGames, setAllGames] = useState([]);
     const [selectedGames, setSelectedGames] = useState([]);
@@ -111,7 +162,7 @@ const RoundsManager = ({ competitionId, onRoundsCreated }) => {
                 const gamesResponse = await api.get('/game');
                 setAllGames(gamesResponse.data);
             } catch (err) {
-                console.error("Помилка завантаження ігор:", err);
+                console.error("Error loading games:", err);
             } finally {
                 setLoading(false);
             }
@@ -126,42 +177,45 @@ const RoundsManager = ({ competitionId, onRoundsCreated }) => {
                 competitionId: Number(competitionId),
                 gameIds: selectedGames,
             });
-            alert('Раунди успішно створено!');
+            alert('Rounds initialized successfully.');
             setSelectedGames([]);
             if (onRoundsCreated) onRoundsCreated();
         } catch (err) {
-            alert('Помилка створення раундів');
+            alert('Error creating rounds.');
             console.error(err);
         }
     };
 
-    if (loading) return <div>Завантаження ігор...</div>;
+    if (loading) return <div>Loading game modules...</div>;
 
     return (
-        <div style={{ border: '1px solid #ccc', padding: '20px', marginTop: '20px' }}>
-            <h3>Додати раунди (ігри)</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <select multiple value={selectedGames}
-                    onChange={(e) => setSelectedGames(Array.from(e.target.selectedOptions, option => Number(option.value)))}
-                    style={{ width: '100%', minHeight: '150px' }}>
-                    {allGames.map(g => <option key={g.id} value={g.id}>{g.gameTitle}</option>)}
-                </select>
-                <button onClick={handleCreateRounds} style={{ padding: '10px 20px', alignSelf: 'center' }}>Створити
-                    раунди
-                </button>
+        <RetroSection title="ROUND CONFIGURATION">
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: retroTheme.fonts.size.small }}>AVAILABLE GAMES:</label>
+                    <select multiple value={selectedGames}
+                        onChange={(e) => setSelectedGames(Array.from(e.target.selectedOptions, option => Number(option.value)))}
+                        style={{ ...retroTheme.common.input, height: '120px' }}>
+                        {allGames.map(g => <option key={g.id} value={g.id}>{g.gameTitle}</option>)}
+                    </select>
+                </div>
+                <div style={{ paddingTop: '20px' }}>
+                    <RetroButton onClick={handleCreateRounds} disabled={selectedGames.length === 0}>
+                        INITIALIZE ROUNDS &gt;&gt;
+                    </RetroButton>
+                </div>
             </div>
-        </div>
+        </RetroSection>
     );
 };
 
-// --- КОМПОНЕНТ ДЛЯ ПІДТВЕРДЖЕННЯ (ТЕПЕР З ПОВНОЮ ЛОГІКОЮ) ---
+// --- Confirmation Manager ---
 const ConfirmationManager = ({ round }) => {
     const [reportedPlayers, setReportedPlayers] = useState([]);
     const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Функція для завантаження звітів
     const fetchReportedPlayers = async () => {
         if (!round) return;
         setLoading(true);
@@ -169,18 +223,17 @@ const ConfirmationManager = ({ round }) => {
         try {
             const response = await api.get(`/round_result/${round.id}/reported`);
             setReportedPlayers(response.data.players || []);
-            setSelectedPlayerIds([]); // Скидаємо вибір
+            setSelectedPlayerIds([]);
         } catch (err) {
-            setError(err.response?.data?.error || "Не вдалося завантажити звіти.");
+            setError(err.response?.data?.error || "Failed to load reports.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Функція для підтвердження/відхилення
     const handleConfirmation = async (valid) => {
         if (selectedPlayerIds.length === 0) {
-            alert("Оберіть гравців для дії.");
+            alert("Select players first.");
             return;
         }
         try {
@@ -189,14 +242,13 @@ const ConfirmationManager = ({ round }) => {
                 roundId: round.id,
                 playerIds: selectedPlayerIds,
             });
-            alert(`Дію для ${selectedPlayerIds.length} гравців виконано.`);
-            fetchReportedPlayers(); // Оновлюємо список
+            alert(`Action completed for ${selectedPlayerIds.length} players.`);
+            fetchReportedPlayers();
         } catch (err) {
-            alert(err.response?.data?.error || "Помилка підтвердження.");
+            alert(err.response?.data?.error || "Confirmation error.");
         }
     };
 
-    // Функція для вибору всіх гравців
     const handleSelectAll = (e) => {
         if (e.target.checked) {
             setSelectedPlayerIds(reportedPlayers.map(p => p.id));
@@ -206,28 +258,28 @@ const ConfirmationManager = ({ round }) => {
     };
 
     return (
-        <div style={{ borderTop: '2px solid blue', marginTop: '15px', paddingTop: '15px' }}>
-            <h4>Підтвердження Результатів Раунду</h4>
-            <button onClick={fetchReportedPlayers} disabled={loading}>
-                {loading ? "Завантаження..." : "Переглянути звіти Працівників"}
-            </button>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div style={{ borderTop: `2px solid ${retroTheme.colors.border}`, marginTop: '15px', paddingTop: '15px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: 'blue' }}>:: WORKER REPORT VERIFICATION ::</div>
+            <RetroButton onClick={fetchReportedPlayers} disabled={loading}>
+                {loading ? "LOADING..." : "FETCH REPORTS"}
+            </RetroButton>
+            {error && <p style={{ color: 'red', fontSize: retroTheme.fonts.size.small }}>{error}</p>}
 
             {reportedPlayers.length > 0 && (
                 <div style={{ marginTop: '10px' }}>
-                    <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: retroTheme.fonts.size.small, border: '1px solid #ccc' }}>
                         <thead>
-                            <tr>
-                                <th style={{ textAlign: 'center' }}><input type="checkbox" onChange={handleSelectAll} /></th>
-                                <th>ID</th>
-                                <th>Email</th>
-                                <th>Статус (від Worker)</th>
+                            <tr style={{ backgroundColor: '#eee' }}>
+                                <th style={thStyle}><input type="checkbox" onChange={handleSelectAll} /></th>
+                                <th style={thStyle}>ID</th>
+                                <th style={thStyle}>EMAIL</th>
+                                <th style={thStyle}>REPORTED STATUS</th>
                             </tr>
                         </thead>
                         <tbody>
                             {reportedPlayers.map(p => (
-                                <tr key={p.id}>
-                                    <td style={{ textAlign: 'center' }}>
+                                <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
+                                    <td style={{ ...tdStyle, textAlign: 'center' }}>
                                         <input
                                             type="checkbox"
                                             checked={selectedPlayerIds.includes(p.id)}
@@ -236,9 +288,10 @@ const ConfirmationManager = ({ round }) => {
                                             }}
                                         />
                                     </td>
-                                    <td>{p.id}</td>
-                                    <td>{p.email}</td>
+                                    <td style={tdStyle}>{p.id}</td>
+                                    <td style={tdStyle}>{p.email}</td>
                                     <td style={{
+                                        ...tdStyle,
                                         fontWeight: 'bold',
                                         color: p.status === 'PASSED' ? 'green' : 'red'
                                     }}>{p.status}</td>
@@ -247,12 +300,12 @@ const ConfirmationManager = ({ round }) => {
                         </tbody>
                     </table>
                     <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                        <button onClick={() => handleConfirmation(true)}
-                            disabled={selectedPlayerIds.length === 0}>Підтвердити обраних
-                        </button>
-                        <button onClick={() => handleConfirmation(false)}
-                            disabled={selectedPlayerIds.length === 0}>Відхилити обраних
-                        </button>
+                        <RetroButton onClick={() => handleConfirmation(true)} disabled={selectedPlayerIds.length === 0}>
+                            CONFIRM SELECTED
+                        </RetroButton>
+                        <RetroButton onClick={() => handleConfirmation(false)} disabled={selectedPlayerIds.length === 0} variant="danger">
+                            REJECT SELECTED
+                        </RetroButton>
                     </div>
                 </div>
             )}
@@ -260,7 +313,7 @@ const ConfirmationManager = ({ round }) => {
     );
 };
 
-// --- Компонент Керування Ігровим Процесом (ОНОВЛЕНО) ---
+// --- Game Flow Manager ---
 const GameFlowManager = ({ competitionId }) => {
     const { user } = useAuth();
     const [competitionStatus, setCompetitionStatus] = useState(null);
@@ -270,10 +323,8 @@ const GameFlowManager = ({ competitionId }) => {
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
-        // Залишаємо цю функцію без змін, як у вашій робочій версії
         setLoading(true);
         try {
-            // Завантажуємо статус змагання
             const competitionsResponse = await api.get('/competition');
             const thisComp = competitionsResponse.data.find(c => c.id == competitionId);
             if (thisComp) {
@@ -286,7 +337,7 @@ const GameFlowManager = ({ competitionId }) => {
             const currentRoundResponse = await api.get(`/round/${competitionId}/current_round`);
             setCurrentRound(currentRoundResponse.data);
         } catch (err) {
-            console.warn("Помилка завантаження даних ігрового процесу:", err.message);
+            console.warn("Error loading game flow:", err.message);
         } finally {
             setLoading(false);
         }
@@ -296,127 +347,167 @@ const GameFlowManager = ({ competitionId }) => {
         fetchData();
     }, [fetchData]);
 
-    // --- ОНОВЛЕНА РЕАЛІЗАЦІЯ ЛОГІКИ КНОПОК З TRY...CATCH ---
     const handleStartCompetition = async () => {
-        if (!window.confirm("Ви впевнені, що хочете розпочати змагання?")) return;
+        if (!window.confirm("Are you sure you want to START the competition?")) return;
         try {
             await api.patch(`/competition/${competitionId}/start`);
-            alert('Змагання успішно розпочато!');
+            alert('Competition STARTED.');
             fetchData();
         } catch (err) {
-            console.error("Помилка старту змагання:", err);
-            // Виводимо повідомлення з JSON-відповіді, якщо воно є
-            const errorMessage = err.response?.data?.error || "Сталася невідома помилка.";
-            alert(`Помилка: ${errorMessage}`);
+            const errorMessage = err.response?.data?.error || "Unknown error.";
+            alert(`Error: ${errorMessage}`);
         }
     };
 
     const handleStartNextRound = async () => {
-        if (!window.confirm("Розпочати наступний раунд?")) return;
+        if (!window.confirm("Start next round?")) return;
         try {
             await api.patch(`/round/${competitionId}/next_round/start`);
-            alert('Наступний раунд розпочато!');
+            alert('Round STARTED.');
             fetchData();
         } catch (err) {
-            console.error("Помилка старту раунду:", err);
-            const errorMessage = err.response?.data?.error || "Сталася невідома помилка.";
-            alert(`Помилка: ${errorMessage}`);
+            const errorMessage = err.response?.data?.error || "Unknown error.";
+            alert(`Error: ${errorMessage}`);
         }
     };
 
     const handleEndCurrentRound = async () => {
-        if (!window.confirm("Завершити поточний раунд?")) return;
+        if (!window.confirm("End current round?")) return;
         try {
             await api.patch(`/round/${competitionId}/current_round/end`);
-            alert('Поточний раунд завершено!');
+            alert('Round ENDED.');
             fetchData();
         } catch (err) {
-            console.error("Помилка завершення раунду:", err);
-            const errorMessage = err.response?.data?.error || "Сталася невідома помилка.";
-            alert(`Помилка: ${errorMessage}`);
+            const errorMessage = err.response?.data?.error || "Unknown error.";
+            alert(`Error: ${errorMessage}`);
         }
     };
 
-    if (loading) return <div>Завантаження стану гри...</div>;
+    if (loading) return <div>Loading system status...</div>;
 
     return (
-        <div style={{ border: '1px solid #ccc', padding: '20px', marginTop: '20px', backgroundColor: '#f9f9f9' }}>
-            <h2>Панель Керування Грою</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '20px' }}>
-                <div>Статус змагання: <strong>{competitionStatus || 'PENDING'}</strong></div>
-                <button onClick={handleStartCompetition} disabled={competitionStatus !== 'FUNDED'}>
-                    Розпочати змагання
-                </button>
+        <RetroSection title="GAME CONTROL PANEL">
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                backgroundColor: '#e3f2fd',
+                padding: '10px',
+                border: '1px solid #90caf9'
+            }}>
+                <div>SYSTEM STATUS: <strong style={{ color: competitionStatus === 'ACTIVE' ? 'green' : 'black' }}>{competitionStatus || 'PENDING'}</strong></div>
+                <RetroButton onClick={handleStartCompetition} disabled={competitionStatus !== 'FUNDED'} variant="primary">
+                    INITIATE COMPETITION
+                </RetroButton>
             </div>
-            <hr />
-            <h3>Список Раундів</h3>
-            {rounds.length > 0 ? (
-                <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ backgroundColor: '#e9e9e9' }}>
-                            <th style={{ padding: '8px' }}>№</th>
-                            <th style={{ padding: '8px' }}>Назва Гри</th>
-                            <th style={{ padding: '8px' }}>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>{rounds.map((r, index) => (<tr key={r.id}>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                        <td style={{ padding: '8px' }}>{r.title}</td>
-                        <td style={{ padding: '8px' }}>{r.status}</td>
-                    </tr>))}</tbody>
-                </table>
-            ) : <p>Раундів ще не створено або не вдалося завантажити.</p>}
-            <hr />
-            <h3>Керування Раундами</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
-                <div style={{ flex: 1 }}>
-                    <h4>Поточний раунд</h4>
+
+            <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '5px', fontSize: retroTheme.fonts.size.small }}>ROUND SEQUENCE:</div>
+                {rounds.length > 0 ? (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: retroTheme.fonts.size.small, border: '1px solid #ccc' }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#eee' }}>
+                                <th style={thStyle}>#</th>
+                                <th style={thStyle}>GAME TITLE</th>
+                                <th style={thStyle}>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>{rounds.map((r, index) => (<tr key={r.id} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={{ ...tdStyle, textAlign: 'center' }}>{index + 1}</td>
+                            <td style={tdStyle}>{r.title}</td>
+                            <td style={tdStyle}>{r.status}</td>
+                        </tr>))}</tbody>
+                    </table>
+                ) : <p style={{ color: '#777' }}>No rounds configured.</p>}
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px' }}>
+                <div style={{ flex: 1, border: '1px solid #ccc', padding: '10px', backgroundColor: '#fff' }}>
+                    <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '5px' }}>CURRENT ROUND</h4>
                     {currentRound ? (
                         <>
-                            <p>Раунд #{currentRound.roundNumber} (Статус: {currentRound.status})</p>
-                            <button onClick={handleEndCurrentRound} disabled={!currentRound}>Завершити поточний раунд
-                            </button>
+                            <p><strong>Round #{currentRound.roundNumber}</strong></p>
+                            <p>Status: <span style={{ color: 'blue' }}>{currentRound.status}</span></p>
+                            <RetroButton onClick={handleEndCurrentRound} disabled={!currentRound} variant="danger">
+                                TERMINATE ROUND
+                            </RetroButton>
                             {user.role === 'FRONTMAN' && <ConfirmationManager round={currentRound} />}
                         </>
-                    ) : <p>Немає активного раунду.</p>}
+                    ) : <p style={{ color: '#777' }}>No active round.</p>}
                 </div>
-                <div style={{ flex: 1 }}>
-                    <h4>Наступний раунд</h4>
-                    {nextRound ? <p>Раунд #{nextRound.roundNumber}</p> : <p>Це останній раунд або раундів немає.</p>}
-                    <button onClick={handleStartNextRound} disabled={!nextRound}>Розпочати наступний раунд</button>
+                <div style={{ flex: 1, border: '1px solid #ccc', padding: '10px', backgroundColor: '#fff' }}>
+                    <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '5px' }}>NEXT ROUND</h4>
+                    {nextRound ? (
+                        <>
+                            <p><strong>Round #{nextRound.roundNumber}</strong></p>
+                            <RetroButton onClick={handleStartNextRound} disabled={!nextRound} variant="primary">
+                                START ROUND
+                            </RetroButton>
+                        </>
+                    ) : <p style={{ color: '#777' }}>Sequence complete or not initialized.</p>}
+                </div>
+            </div>
+        </RetroSection>
+    );
+};
+
+// --- Main Page ---
+const CompetitionDetailPage = () => {
+    const { id } = useParams();
+    const [gameFlowKey, setGameFlowKey] = useState(Date.now());
+
+    return (
+        <div style={retroTheme.common.pageContainer}>
+            <div style={{ maxWidth: '1200px', margin: 'auto', padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                    <Link to="/competitions" style={retroTheme.common.link}>&lt;&lt; BACK TO LIST</Link>
+                </div>
+
+                <div style={{
+                    backgroundColor: retroTheme.colors.headerBg,
+                    border: `1px solid ${retroTheme.colors.border}`,
+                    padding: '15px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: retroTheme.fonts.size.title }}>MAINFRAME CONTROL: COMPETITION #{id}</h1>
+                        <div style={{ fontSize: retroTheme.fonts.size.small, color: retroTheme.colors.textLight }}>ACCESS LEVEL: HOST/FRONTMAN</div>
+                    </div>
+                    <Link to={`/competitions/${id}/statistics`} style={{ textDecoration: 'none' }}>
+                        <RetroButton>VIEW STATISTICS &gt;&gt;</RetroButton>
+                    </Link>
+                </div>
+
+                <div style={{ display: 'flex', gap: '20px', flexDirection: 'column' }}>
+                    <GameFlowManager key={gameFlowKey} competitionId={id} />
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                        <div style={{ flex: 1 }}>
+                            <PlayersManager competitionId={id} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <RoundsManager competitionId={id} onRoundsCreated={() => setGameFlowKey(Date.now())} />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
+const thStyle = {
+    padding: '5px',
+    textAlign: 'left',
+    fontSize: '10px',
+    borderBottom: '1px solid #ccc'
+};
 
-// --- Основний компонент сторінки (Ваша робоча версія, без змін) ---
-const CompetitionDetailPage = () => {
-    const { id } = useParams();
-    const [gameFlowKey, setGameFlowKey] = useState(Date.now());
-
-    return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: 'auto' }}>
-            <Link to="/competitions">{"<-- Назад до списку змагань"}</Link>
-            <h1 style={{ marginTop: '20px' }}>Керування змаганням #{id}</h1>
-            <div style={{ marginBottom: '20px' }}>
-                <Link to={`/competitions/${id}/statistics`} style={{
-                    display: 'inline-block',
-                    padding: '10px 20px',
-                    backgroundColor: '#2196F3',
-                    color: 'white',
-                    textDecoration: 'none',
-                    borderRadius: '5px'
-                }}>
-                    Переглянути Статистику
-                </Link>
-            </div>
-            <GameFlowManager key={gameFlowKey} competitionId={id} />
-            <PlayersManager competitionId={id} />
-            <RoundsManager competitionId={id} onRoundsCreated={() => setGameFlowKey(Date.now())} />
-        </div>
-    );
+const tdStyle = {
+    padding: '5px',
+    fontSize: '11px'
 };
 
 export default CompetitionDetailPage;

@@ -1,7 +1,8 @@
 // src/pages/Vip/VipDashboard.jsx
-import React, {useState, useEffect, useCallback} from 'react';
-import {Link} from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import retroTheme from '../../styles/retroTheme';
 
 const VipDashboard = () => {
     const [allCompetitions, setAllCompetitions] = useState([]);
@@ -19,22 +20,18 @@ const VipDashboard = () => {
             const allCompetitionsResponse = await api.get('/competition/list-all');
             const competitionsData = allCompetitionsResponse.data;
 
-            // --- ЗМІНА ТУТ: ВИДАЛЕНО ФІЛЬТРАЦІЮ ---
-            // Тепер ми використовуємо весь список, який прийшов з бекенду.
             setAllCompetitions(competitionsData);
 
-            // Встановлюємо перше змагання як обране за замовчуванням, якщо список не порожній
             if (competitionsData.length > 0) {
                 setSelectedCompetition(competitionsData[0].id);
             }
 
-            // Запит на отримання історії внесків (без змін)
             const fundedResponse = await api.get('/transaction/my-deposits');
             setFundedCompetitions(fundedResponse.data);
 
         } catch (err) {
-            console.error("Помилка завантаження даних:", err);
-            setError(err.response?.data?.error || "Не вдалося завантажити дані.");
+            console.error("Error loading data:", err);
+            setError(err.response?.data?.error || "Failed to load data.");
         } finally {
             setLoading(false);
         }
@@ -47,7 +44,7 @@ const VipDashboard = () => {
     const handleDepositSubmit = async (e) => {
         e.preventDefault();
         if (!selectedCompetition || !amount || amount <= 0) {
-            alert("Будь ласка, оберіть змагання та введіть коректну суму.");
+            alert("Please select a competition and enter a valid amount.");
             return;
         }
 
@@ -56,90 +53,119 @@ const VipDashboard = () => {
                 competitionId: Number(selectedCompetition),
                 amount: Number(amount)
             });
-            alert(`Внесок у розмірі ${amount} успішно зроблено!`);
+            alert(`Investment of ${amount} confirmed!`);
             setAmount('');
             fetchData();
         } catch (err) {
-            console.error("Помилка при здійсненні внеску:", err);
-            alert(err.response?.data?.error || "Сталася помилка.");
+            console.error("Deposit error:", err);
+            alert(err.response?.data?.error || "An error occurred.");
         }
     };
 
-    if (loading) return <div>Завантаження...</div>;
+    if (loading) return <div style={{ padding: '20px', fontFamily: retroTheme.fonts.main }}>Loading VIP interface...</div>;
 
     return (
-        <div style={{padding: '20px', maxWidth: '800px', margin: 'auto'}}>
-            <Link to="/dashboard">{"<-- Назад на дашборд"}</Link>
-            <h1 style={{marginTop: '20px'}}>Панель Інвестора (VIP)</h1>
-
-            {error && <p style={{color: 'red', border: '1px solid red', padding: '10px'}}>{error}</p>}
-
-            {!error && allCompetitions.length > 0 ? (
-                <div style={{border: '1px solid #ccc', padding: '20px', marginBottom: '30px'}}>
-                    <h2>Зробити Внесок</h2>
-                    <form onSubmit={handleDepositSubmit}>
-                        <div style={{marginBottom: '15px'}}>
-                            <label>Оберіть змагання</label>
-                            <select
-                                value={selectedCompetition}
-                                onChange={e => setSelectedCompetition(e.target.value)}
-                                style={{width: '100%', padding: '10px', marginTop: '5px'}}
-                            >
-                                {allCompetitions.map(c => (
-                                    // --- ЗМІНА ТУТ: НОВИЙ ФОРМАТ ВІДОБРАЖЕННЯ ---
-                                    <option key={c.id} value={c.id}>
-                                        {`${c.createdBy.email} | ${c.title} (Статус: ${c.status})`}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div style={{marginBottom: '15px'}}>
-                            <label>Сума внеску</label>
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={e => setAmount(e.target.value)}
-                                placeholder="Введіть суму"
-                                min="1"
-                                required
-                                style={{width: '100%', padding: '10px', marginTop: '5px'}}
-                            />
-                        </div>
-                        <button type="submit" style={{width: '100%', padding: '12px', cursor: 'pointer'}}>
-                            Інвестувати
-                        </button>
-                    </form>
+        <div style={retroTheme.common.pageContainer}>
+            <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                    <Link to="/dashboard" style={retroTheme.common.link}>&lt;&lt; BACK TO DASHBOARD</Link>
                 </div>
-            ) : (
-                !error && !loading && <p>Наразі немає активних змагань для інвестування.</p>
-            )}
 
-            <div>
-                <h2>Ваші Інвестиції</h2>
-                {!error && fundedCompetitions.length > 0 ? (
-                    <table border="1" style={{width: '100%', borderCollapse: 'collapse'}}>
-                        <thead>
-                        <tr style={{backgroundColor: '#f2f2f2'}}>
-                            <th style={{padding: '10px'}}>Змагання</th>
-                            <th style={{padding: '10px'}}>Сума</th>
-                            <th style={{padding: '10px'}}>Дата</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {fundedCompetitions.map(tx => (
-                            <tr key={tx.id}>
-                                <td style={{padding: '10px'}}>{tx.competition.title}</td>
-                                <td style={{padding: '10px'}}>{tx.amount.toLocaleString()}</td>
-                                <td style={{padding: '10px'}}>{new Date(tx.createdAt).toLocaleString()}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                <div style={{
+                    backgroundColor: retroTheme.colors.headerBg,
+                    border: `1px solid ${retroTheme.colors.border}`,
+                    padding: '15px',
+                    marginBottom: '20px',
+                    textAlign: 'center'
+                }}>
+                    <h1 style={{ margin: 0, fontSize: retroTheme.fonts.size.title }}>VIP LOUNGE</h1>
+                </div>
+
+                {error && <p style={{ color: 'red', border: '1px solid red', padding: '10px', backgroundColor: '#ffeeee' }}>{error}</p>}
+
+                {!error && allCompetitions.length > 0 ? (
+                    <div style={retroTheme.common.card}>
+                        <div style={{
+                            backgroundColor: retroTheme.colors.sectionHeaderBg,
+                            padding: '10px',
+                            borderBottom: `1px solid ${retroTheme.colors.borderLight}`,
+                            fontWeight: 'bold'
+                        }}>
+                            MAKE AN INVESTMENT
+                        </div>
+                        <div style={{ padding: '20px' }}>
+                            <form onSubmit={handleDepositSubmit}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Select Competition</label>
+                                    <select
+                                        value={selectedCompetition}
+                                        onChange={e => setSelectedCompetition(e.target.value)}
+                                        style={{ ...retroTheme.common.input, width: '100%' }}
+                                    >
+                                        {allCompetitions.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {`${c.createdBy.email} | ${c.title} (Status: ${c.status})`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Investment Amount</label>
+                                    <input
+                                        type="number"
+                                        value={amount}
+                                        onChange={e => setAmount(e.target.value)}
+                                        placeholder="Enter amount"
+                                        min="1"
+                                        required
+                                        style={{ ...retroTheme.common.input, width: '100%' }}
+                                    />
+                                </div>
+                                <button type="submit" style={{ ...retroTheme.common.button, width: '100%' }}>
+                                    CONFIRM INVESTMENT
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 ) : (
-                    !error && !loading &&
-                    <p>Ви ще не зробили жодних внесків. Секція з'явиться тут, щойно ви створите ендпоінт
-                        /api/transaction/my-deposits.</p>
+                    !error && !loading && <p style={{ fontFamily: retroTheme.fonts.main }}>No active competitions available for investment.</p>
                 )}
+
+                <div style={{ marginTop: '30px' }}>
+                    <h2 style={{
+                        fontSize: retroTheme.fonts.size.large,
+                        borderBottom: `2px solid ${retroTheme.colors.border}`,
+                        paddingBottom: '5px',
+                        marginBottom: '15px'
+                    }}>
+                        PORTFOLIO
+                    </h2>
+                    {!error && fundedCompetitions.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff', border: `1px solid ${retroTheme.colors.border}` }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: retroTheme.colors.headerBg }}>
+                                        <th style={{ padding: '10px', border: `1px solid ${retroTheme.colors.border}`, textAlign: 'left' }}>COMPETITION</th>
+                                        <th style={{ padding: '10px', border: `1px solid ${retroTheme.colors.border}`, textAlign: 'left' }}>AMOUNT</th>
+                                        <th style={{ padding: '10px', border: `1px solid ${retroTheme.colors.border}`, textAlign: 'left' }}>DATE</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {fundedCompetitions.map(tx => (
+                                        <tr key={tx.id}>
+                                            <td style={{ padding: '10px', border: `1px solid ${retroTheme.colors.borderLight}` }}>{tx.competition.title}</td>
+                                            <td style={{ padding: '10px', border: `1px solid ${retroTheme.colors.borderLight}`, fontWeight: 'bold', color: 'green' }}>{tx.amount.toLocaleString()}</td>
+                                            <td style={{ padding: '10px', border: `1px solid ${retroTheme.colors.borderLight}` }}>{new Date(tx.createdAt).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        !error && !loading &&
+                        <p style={{ color: retroTheme.colors.textLight, fontStyle: 'italic' }}>No investments recorded yet.</p>
+                    )}
+                </div>
             </div>
         </div>
     );

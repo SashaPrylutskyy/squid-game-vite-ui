@@ -1,76 +1,131 @@
 // src/pages/Auth/LoginPage.jsx
-import React, {useState} from 'react';
-import {useNavigate, Link} from 'react-router-dom';
-import {useAuth} from '../../contexts/AuthContext.jsx';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import api from '../../services/api';
+import retroTheme from '../../styles/retroTheme';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const {login} = useAuth();
+    const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         try {
-            const response = await api.post('/auth/login', {email, password});
+            const response = await api.post('/auth/login', { email, password });
             login(response.data);
             navigate('/dashboard');
         } catch (err) {
-            setError('Неправильний email або пароль.');
+            setError('Invalid email or password.');
             console.error(err);
         }
     };
 
     return (
-        <div style={{
-            padding: '50px',
-            maxWidth: '400px',
-            margin: 'auto',
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            marginTop: '100px'
-        }}>
-            <h1>Вхід в систему</h1>
-            <form onSubmit={handleSubmit}>
-                {/* --- ПОВЕРТАЄМО ПОЛЯ НАЗАД --- */}
-                <div style={{marginBottom: '10px'}}>
-                    <label>Email</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        style={{width: '100%', padding: '8px', marginTop: '5px'}}
-                    />
-                </div>
-                <div style={{marginBottom: '15px'}}>
-                    <label>Пароль</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        style={{width: '100%', padding: '8px', marginTop: '5px'}}
-                    />
-                </div>
-                {error && <p style={{color: 'red'}}>{error}</p>}
-                <button type="submit" style={{width: '100%', padding: '10px 20px', cursor: 'pointer'}}>
-                    Увійти
-                </button>
-            </form>
+        <div style={retroTheme.common.pageContainer}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '80vh',
+                flexDirection: 'column'
+            }}>
+                <div style={{
+                    ...retroTheme.common.card,
+                    width: '350px',
+                    padding: '0',
+                    backgroundColor: retroTheme.colors.contentBackground
+                }}>
+                    <div style={{
+                        backgroundColor: retroTheme.colors.sectionHeaderBg,
+                        padding: '5px 10px',
+                        borderBottom: `1px solid ${retroTheme.colors.borderLight}`,
+                        fontWeight: 'bold',
+                        fontSize: retroTheme.fonts.size.large,
+                        color: retroTheme.colors.text
+                    }}>
+                        SYSTEM LOGIN
+                    </div>
 
-            {/* --- ОНОВЛЕНИЙ БЛОК З ПОСИЛАННЯМИ --- */}
-            <div style={{textAlign: 'center', marginTop: '20px', fontSize: '14px'}}>
-                <p style={{marginBottom: '10px'}}>
-                    Ще не маєте акаунту? <Link to="/register">Зареєструватися (HOST/VIP)</Link>
-                </p>
-                <p>
-                    Маєте реферальний код гравця? <br/>
-                    Перейдіть за посиланням, яке вам надали.
-                </p>
+                    <div style={{ padding: '20px' }}>
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '5px',
+                                    fontWeight: 'bold',
+                                    fontSize: retroTheme.fonts.size.small,
+                                    color: retroTheme.colors.textLight
+                                }}>USERNAME (EMAIL)</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    style={retroTheme.common.input}
+                                    placeholder="enter email..."
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '5px',
+                                    fontWeight: 'bold',
+                                    fontSize: retroTheme.fonts.size.small,
+                                    color: retroTheme.colors.textLight
+                                }}>PASSWORD</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    style={retroTheme.common.input}
+                                    placeholder="enter password..."
+                                />
+                            </div>
+
+                            {error && (
+                                <div style={{
+                                    color: retroTheme.colors.error,
+                                    marginBottom: '15px',
+                                    fontSize: retroTheme.fonts.size.small,
+                                    textAlign: 'center',
+                                    border: '1px dashed red',
+                                    padding: '5px'
+                                }}>
+                                    [!] {error}
+                                </div>
+                            )}
+
+                            <button type="submit" style={{ ...retroTheme.common.button, width: '100%' }}>
+                                LOGIN &gt;&gt;
+                            </button>
+                        </form>
+                    </div>
+
+                    <div style={{
+                        backgroundColor: '#f9f9f9',
+                        borderTop: `1px solid ${retroTheme.colors.borderLight}`,
+                        padding: '10px',
+                        textAlign: 'center',
+                        fontSize: retroTheme.fonts.size.small
+                    }}>
+                        <p style={{ margin: '5px 0' }}>
+                            New user? <Link to="/register" style={retroTheme.common.link}>Register (HOST/VIP)</Link>
+                        </p>
+                        <p style={{ margin: '5px 0', color: retroTheme.colors.textLight }}>
+                            Have a referral code? Check your invite link.
+                        </p>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '20px', color: retroTheme.colors.textLight, fontSize: retroTheme.fonts.size.small }}>
+                    &copy; 1999-2025 SQUID SYSTEM INC.
+                </div>
             </div>
         </div>
     );
