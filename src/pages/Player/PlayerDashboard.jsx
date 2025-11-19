@@ -1,6 +1,6 @@
 // src/pages/Player/PlayerDashboard.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, {useState, useEffect, useCallback} from 'react';
+import {Link} from 'react-router-dom';
 import api from '../../services/api';
 import retroTheme from '../../styles/retroTheme';
 
@@ -49,14 +49,16 @@ const PlayerDashboard = () => {
         }
     };
 
-    if (loading && !playerStatus) return <div style={{ padding: '20px', fontFamily: retroTheme.fonts.main }}>Loading player interface...</div>;
+    if (loading && !playerStatus) return <div style={{padding: '20px', fontFamily: retroTheme.fonts.main}}>Loading
+        player interface...</div>;
 
-    // Status styles
+    // --- ЗМІНА ТУТ ---
     const statusStyles = {
-        ALIVE: { color: 'green', text: 'ACTIVE' },
-        ELIMINATED: { color: 'red', text: 'ELIMINATED' },
-        WINNER: { color: '#b38f00', text: 'VICTOR' },
-        NOT_IN_GAME: { color: 'gray', text: 'INACTIVE' }
+        ALIVE: {color: 'green', text: 'ACTIVE'},
+        PASSED: {color: '#155724', text: 'PASSED'}, // Новий статус з таким самим зеленим кольором, як у кнопки
+        ELIMINATED: {color: 'red', text: 'ELIMINATED'},
+        WINNER: {color: '#b38f00', text: 'VICTOR'},
+        NOT_IN_GAME: {color: 'gray', text: 'INACTIVE'}
     };
 
     const currentStatusKey = playerStatus?.statusInCompetition || 'NOT_IN_GAME';
@@ -64,8 +66,8 @@ const PlayerDashboard = () => {
 
     return (
         <div style={retroTheme.common.pageContainer}>
-            <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px' }}>
-                <div style={{ marginBottom: '20px' }}>
+            <div style={{maxWidth: '800px', margin: 'auto', padding: '20px'}}>
+                <div style={{marginBottom: '20px'}}>
                     <Link to="/dashboard" style={retroTheme.common.link}>&lt;&lt; BACK TO DASHBOARD</Link>
                 </div>
 
@@ -76,8 +78,11 @@ const PlayerDashboard = () => {
                     marginBottom: '20px',
                     textAlign: 'center'
                 }}>
-                    <h1 style={{ margin: 0, fontSize: retroTheme.fonts.size.title }}>PLAYER TERMINAL</h1>
-                    <div style={{ fontSize: retroTheme.fonts.size.small, color: retroTheme.colors.textLight }}>ID: {playerStatus?.id || 'UNKNOWN'}</div>
+                    <h1 style={{margin: 0, fontSize: retroTheme.fonts.size.title}}>PLAYER TERMINAL</h1>
+                    <div style={{
+                        fontSize: retroTheme.fonts.size.small,
+                        color: retroTheme.colors.textLight
+                    }}>ID: {playerStatus?.id || 'UNKNOWN'}</div>
                 </div>
 
                 {error && (
@@ -94,7 +99,7 @@ const PlayerDashboard = () => {
                 )}
 
                 {!error && playerStatus && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         {/* Status Card */}
                         <div style={retroTheme.common.card}>
                             <div style={{
@@ -105,12 +110,13 @@ const PlayerDashboard = () => {
                             }}>
                                 STATUS REPORT
                             </div>
-                            <div style={{ padding: '15px' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <span style={{ fontWeight: 'bold' }}>COMPETITION:</span> {playerStatus.competition?.title || 'N/A'}
+                            <div style={{padding: '15px'}}>
+                                <div style={{marginBottom: '10px'}}>
+                                    <span
+                                        style={{fontWeight: 'bold'}}>COMPETITION:</span> {playerStatus.competition?.title || 'N/A'}
                                 </div>
                                 <div>
-                                    <span style={{ fontWeight: 'bold' }}>CURRENT STATUS:</span>
+                                    <span style={{fontWeight: 'bold'}}>CURRENT STATUS:</span>
                                     <span style={{
                                         marginLeft: '10px',
                                         fontWeight: 'bold',
@@ -137,11 +143,11 @@ const PlayerDashboard = () => {
                                 }}>
                                     CURRENT ROUND PROTOCOL
                                 </div>
-                                <div style={{ padding: '15px' }}>
-                                    <div style={{ fontSize: retroTheme.fonts.size.large, marginBottom: '5px' }}>
+                                <div style={{padding: '15px'}}>
+                                    <div style={{fontSize: retroTheme.fonts.size.large, marginBottom: '5px'}}>
                                         {playerStatus.currentRound.gameTitle}
                                     </div>
-                                    <div style={{ color: retroTheme.colors.textLight }}>
+                                    <div style={{color: retroTheme.colors.textLight}}>
                                         STATUS: {playerStatus.currentRound.status}
                                     </div>
                                 </div>
@@ -171,15 +177,20 @@ const PlayerDashboard = () => {
                                     </h2>
 
                                     {playerStatus.activeVote.hasVoted ? (
-                                        <div style={{ textAlign: 'center', padding: '20px', color: 'green', fontWeight: 'bold' }}>
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '20px',
+                                            color: 'green',
+                                            fontWeight: 'bold'
+                                        }}>
                                             VOTE REGISTERED. AWAITING RESULTS.
                                         </div>
                                     ) : (
                                         <>
-                                            <p style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                            <p style={{textAlign: 'center', marginBottom: '20px'}}>
                                                 DECISION REQUIRED: Do you wish to continue participation?
                                             </p>
-                                            <div style={{ display: 'flex', gap: '20px' }}>
+                                            <div style={{display: 'flex', gap: '20px'}}>
                                                 <button
                                                     onClick={() => handleVote(false)}
                                                     disabled={loading}
