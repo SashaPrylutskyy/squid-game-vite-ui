@@ -1,7 +1,7 @@
 // src/App.jsx
 import React from 'react';
-import {Routes, Route, Navigate, Link} from 'react-router-dom';
-import {useAuth} from './contexts/AuthContext.jsx';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext.jsx';
 
 // Компоненти для захисту маршрутів
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,6 +21,7 @@ import Dashboard from './pages/Shared/Dashboard.jsx';
 // Сторінки для адміністративних ролей (HOST, FRONTMAN, etc.)
 import CompetitionListPage from './pages/Host/CompetitionListPage.jsx';
 import CompetitionDetailPage from './pages/Host/CompetitionDetailPage.jsx';
+import CompetitionStatisticsPage from './pages/Host/CompetitionStatisticsPage.jsx';
 import StaffPage from './pages/Host/StaffPage.jsx';
 
 // Сторінки для специфічних ролей
@@ -31,7 +32,7 @@ import VipDashboard from './pages/Vip/VipDashboard.jsx';
 
 
 function App() {
-    const {user} = useAuth();
+    const { user } = useAuth();
 
     return (
         <Routes>
@@ -39,58 +40,59 @@ function App() {
             {/* ================ ПУБЛІЧНІ МАРШРУТИ =================== */}
             {/* ====================================================== */}
 
-            <Route path="/login" element={user ? <Navigate to="/dashboard"/> : <LoginPage/>}/>
-            <Route path="/register" element={user ? <Navigate to="/dashboard"/> : <RegisterPage/>}/>
-            <Route path="/join/:refCode" element={user ? <Navigate to="/dashboard"/> : <JoinPage/>}/>
-            <Route path="/accept-offer/:token" element={user ? <Navigate to="/dashboard"/> : <AcceptOfferPage/>}/>
+            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+            <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+            <Route path="/join/:refCode" element={user ? <Navigate to="/dashboard" /> : <JoinPage />} />
+            <Route path="/accept-offer/:token" element={user ? <Navigate to="/dashboard" /> : <AcceptOfferPage />} />
 
 
             {/* ====================================================== */}
             {/* ================ ЗАХИЩЕНІ МАРШРУТИ ================== */}
             {/* ====================================================== */}
-            <Route path="/" element={<ProtectedRoute/>}>
+            <Route path="/" element={<ProtectedRoute />}>
 
-                <Route path="/dashboard" element={<Dashboard/>}/>
+                <Route path="/dashboard" element={<Dashboard />} />
 
                 {/* --- Маршрути для Керівництва (HOST, FRONTMAN, MANAGER, THE_OFFICER) --- */}
-                <Route element={<RoleGuard roles={['HOST', 'FRONTMAN', 'MANAGER', 'THE_OFFICER']}/>}>
-                    <Route path="/staff" element={<StaffPage/>}/>
+                <Route element={<RoleGuard roles={['HOST', 'FRONTMAN', 'MANAGER', 'THE_OFFICER']} />}>
+                    <Route path="/staff" element={<StaffPage />} />
                 </Route>
 
                 {/* --- Маршрути тільки для вищих ролей (HOST, FRONTMAN) --- */}
-                <Route element={<RoleGuard roles={['HOST', 'FRONTMAN']}/>}>
-                    <Route path="/competitions" element={<CompetitionListPage/>}/>
-                    <Route path="/competitions/:id" element={<CompetitionDetailPage/>}/>
+                <Route element={<RoleGuard roles={['HOST', 'FRONTMAN']} />}>
+                    <Route path="/competitions" element={<CompetitionListPage />} />
+                    <Route path="/competitions/:id" element={<CompetitionDetailPage />} />
+                    <Route path="/competitions/:id/statistics" element={<CompetitionStatisticsPage />} />
                 </Route>
 
                 {/* --- Маршрути для Гравця (PLAYER) --- */}
-                <Route element={<RoleGuard roles={['PLAYER']}/>}>
-                    <Route path="/my-game" element={<PlayerDashboard/>}/>
+                <Route element={<RoleGuard roles={['PLAYER']} />}>
+                    <Route path="/my-game" element={<PlayerDashboard />} />
                 </Route>
 
                 {/* --- Маршрути для Працівника (WORKER) --- */}
-                <Route element={<RoleGuard roles={['WORKER']}/>}>
-                    <Route path="/my-tasks" element={<WorkerDashboard/>}/>
+                <Route element={<RoleGuard roles={['WORKER']} />}>
+                    <Route path="/my-tasks" element={<WorkerDashboard />} />
                 </Route>
 
                 {/* --- Маршрути для Продавця (SALESMAN) --- */}
-                <Route element={<RoleGuard roles={['SALESMAN']}/>}>
-                    <Route path="/referral" element={<SalesmanDashboard/>}/>
+                <Route element={<RoleGuard roles={['SALESMAN']} />}>
+                    <Route path="/referral" element={<SalesmanDashboard />} />
                 </Route>
 
                 {/* --- Маршрути для VIP --- */}
-                <Route element={<RoleGuard roles={['VIP']}/>}>
-                    <Route path="/invest" element={<VipDashboard/>}/>
+                <Route element={<RoleGuard roles={['VIP']} />}>
+                    <Route path="/invest" element={<VipDashboard />} />
                 </Route>
 
-                <Route path="/" element={<Navigate to="/dashboard" exact/>}/>
+                <Route path="/" element={<Navigate to="/dashboard" exact />} />
 
                 <Route path="*" element={
-                    <div style={{textAlign: 'center', marginTop: '50px'}}>
+                    <div style={{ textAlign: 'center', marginTop: '50px' }}>
                         <h1>404 - Сторінку не знайдено</h1>
                         <Link to="/dashboard">Повернутися на головну</Link>
                     </div>
-                }/>
+                } />
             </Route>
         </Routes>
     );
