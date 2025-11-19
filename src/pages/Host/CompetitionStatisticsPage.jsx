@@ -6,164 +6,177 @@ const CompetitionStatisticsPage = () => {
     const { id } = useParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [stats, setStats] = useState({
+    const [generalStats, setGeneralStats] = useState({
         total: 0,
-        statusCounts: {
-            ALIVE: 0,
-            PASSED: 0,
-            ELIMINATED: 0,
-            TIMEOUT: 0
-        },
-        sexCounts: {
-            MALE: 0,
-            FEMALE: 0
-        },
-        detailedMatrix: {}
+        sexCounts: { MALE: 0, FEMALE: 0 }
     });
+    const [roundsStats, setRoundsStats] = useState([]);
 
     useEffect(() => {
-        const fetchStatistics = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                // 1. Fetch total users and status breakdown (base source of truth for totals)
+                // --- 1. General Stats (Keep existing robust logic) ---
+                // Fetch total users to get the count
                 const mainResponse = await api.get(`/competition/${id}`);
                 const allUsers = mainResponse.data;
 
-                const statusCounts = {
-                    ALIVE: 0,
-                    PASSED: 0,
-                    ELIMINATED: 0,
-                    TIMEOUT: 0
-                };
-
-                allUsers.forEach(u => {
-                    if (statusCounts.hasOwnProperty(u.status)) {
-                        statusCounts[u.status]++;
-                    }
-                });
-
-                // 2. Fetch detailed breakdown by Sex for each Status
-                // We have to make separate calls because the main endpoint might not return 'sex'
+                // Fetch sex breakdown robustly (Status x Sex)
                 const statuses = ['ALIVE', 'PASSED', 'ELIMINATED', 'TIMEOUT'];
                 const sexes = ['MALE', 'FEMALE'];
-
-                const matrix = {};
                 const sexTotals = { MALE: 0, FEMALE: 0 };
 
-                // Create an array of promises to fetch all combinations in parallel
-                const promises = [];
-
+                const sexPromises = [];
                 statuses.forEach(status => {
-                    matrix[status] = { MALE: 0, FEMALE: 0 };
                     sexes.forEach(sex => {
                         const p = api.get(`/competition/${id}/${status}/${sex}`)
                             .then(res => {
-                                const count = res.data.length;
-                                matrix[status][sex] = count;
-                                sexTotals[sex] += count;
+                                sexTotals[sex] += res.data.length;
                             })
                             .catch(err => {
-                                // If 404 or empty, just assume 0
                                 console.warn(`Failed to fetch ${status}/${sex}`, err);
-                                matrix[status][sex] = 0;
                             });
-                        promises.push(p);
+                        sexPromises.push(p);
                     });
                 });
+                await Promise.all(sexPromises);
 
-                await Promise.all(promises);
-
-                setStats({
+                setGeneralStats({
                     total: allUsers.length,
-                    statusCounts,
-                    sexCounts: sexTotals,
-                    detailedMatrix: matrix
+                    sexCounts: sexTotals
                 });
 
+                // --- 2. Round Stats (New Logic) ---
+                // Fetch all rounds
+                const roundsResponse = await api.get(`/round/${id}/rounds`);
+                const rounds = roundsResponse.data;
+
+                // For each round, fetch its users to calculate stats
+                const roundsDataPromises = rounds.map(async (round) => {
+                    try {
+                        const usersResponse = await api.get(`/round/${round.id}`);
+                        const roundUsers = usersResponse.data;
+
+                        const stats = {
+                            total: roundUsers.length,
+                            PASSED: 0,
+                            ELIMINATED: 0,
+                            TIMEOUT: 0,
+                            ALIVE: 0, // Assuming ALIVE might be a status in a round context too
+                            OTHER: 0
+                        };
+
+                        roundUsers.forEach(u => {
+                            if (stats.hasOwnProperty(u.status)) {
+                                stats[u.status]++;
+                            } else {
+                                stats.OTHER++;
+                            }
+                        });
+
+                        return {
+                            ...round,
+                            stats
+                        };
+                    } catch (err) {
+                        console.error(`Error fetching users for round ${round.id}`, err);
+                        return { ...round, stats: null };
+                    }
+                });
+
+                const roundsWithStats = await Promise.all(roundsDataPromises);
+                // Sort rounds by roundNumber if available, or id
+                roundsWithStats.sort((a, b) => (a.roundNumber || a.id) - (b.roundNumber || b.id));
+                setRoundsStats(roundsWithStats);
+
             } catch (err) {
-                console.error("Error fetching competition statistics:", err);
-                setError("Не вдалося завантажити статистику змагання.");
+                console.error("Error fetching statistics:", err);
+                setError("Не вдалося завантажити статистику.");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStatistics();
+        fetchData();
     }, [id]);
 
     if (loading) return <div style={{ padding: '20px' }}>Завантаження статистики...</div>;
     if (error) return <div style={{ padding: '20px', color: 'red' }}>{error}</div>;
-
-    const getPercent = (val, total) => total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
 
     return (
         <div style={{ padding: '20px', maxWidth: '1000px', margin: 'auto' }}>
             <Link to={`/competitions/${id}`}>{"<-- Назад до панелі керування"}</Link>
             <h1 style={{ marginTop: '20px', marginBottom: '30px' }}>Статистика Змагання #{id}</h1>
 
-            {/* Summary Cards */}
+            {/* General Stats Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                 <div style={cardStyle}>
                     <h3>Всього Учасників</h3>
-                    <p style={numberStyle}>{stats.total}</p>
+                    <p style={numberStyle}>{generalStats.total}</p>
                 </div>
 
                 <div style={cardStyle}>
                     <h3>Чоловіки / Жінки</h3>
                     <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <span style={{ display: 'block', fontSize: '2rem', color: '#3498db', fontWeight: 'bold' }}>{stats.sexCounts.MALE}</span>
+                            <span style={{ display: 'block', fontSize: '2rem', color: '#3498db', fontWeight: 'bold' }}>{generalStats.sexCounts.MALE}</span>
                             <span>Male</span>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <span style={{ display: 'block', fontSize: '2rem', color: '#e91e63', fontWeight: 'bold' }}>{stats.sexCounts.FEMALE}</span>
+                            <span style={{ display: 'block', fontSize: '2rem', color: '#e91e63', fontWeight: 'bold' }}>{generalStats.sexCounts.FEMALE}</span>
                             <span>Female</span>
                         </div>
                     </div>
                     {/* Visual Bar */}
-                    {(stats.sexCounts.MALE > 0 || stats.sexCounts.FEMALE > 0) && (
+                    {(generalStats.sexCounts.MALE > 0 || generalStats.sexCounts.FEMALE > 0) && (
                         <div style={{ marginTop: '15px', height: '10px', width: '100%', display: 'flex', borderRadius: '5px', overflow: 'hidden' }}>
-                            <div style={{ width: `${(stats.sexCounts.MALE / (stats.sexCounts.MALE + stats.sexCounts.FEMALE)) * 100}%`, backgroundColor: '#3498db' }} />
-                            <div style={{ width: `${(stats.sexCounts.FEMALE / (stats.sexCounts.MALE + stats.sexCounts.FEMALE)) * 100}%`, backgroundColor: '#e91e63' }} />
+                            <div style={{ width: `${(generalStats.sexCounts.MALE / (generalStats.sexCounts.MALE + generalStats.sexCounts.FEMALE)) * 100}%`, backgroundColor: '#3498db' }} />
+                            <div style={{ width: `${(generalStats.sexCounts.FEMALE / (generalStats.sexCounts.MALE + generalStats.sexCounts.FEMALE)) * 100}%`, backgroundColor: '#e91e63' }} />
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Detailed Table */}
-            <h3>Детальна Статистика</h3>
-            <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', backgroundColor: 'white' }}>
-                <thead>
-                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                        <th style={{ padding: '10px', textAlign: 'left' }}>Статус</th>
-                        <th style={{ padding: '10px', textAlign: 'center', color: '#3498db' }}>Чоловіки</th>
-                        <th style={{ padding: '10px', textAlign: 'center', color: '#e91e63' }}>Жінки</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Всього</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {Object.keys(stats.statusCounts).map(status => (
-                        <tr key={status}>
-                            <td style={{ padding: '10px', fontWeight: 'bold' }}>{status}</td>
-                            <td style={{ padding: '10px', textAlign: 'center' }}>
-                                {stats.detailedMatrix[status]?.MALE || 0}
-                            </td>
-                            <td style={{ padding: '10px', textAlign: 'center' }}>
-                                {stats.detailedMatrix[status]?.FEMALE || 0}
-                            </td>
-                            <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>
-                                {stats.statusCounts[status]}
-                            </td>
+            {/* Round Statistics Table */}
+            <h3>Статистика по Раундах</h3>
+            {roundsStats.length > 0 ? (
+                <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', backgroundColor: 'white' }}>
+                    <thead>
+                        <tr style={{ backgroundColor: '#f5f5f5' }}>
+                            <th style={{ padding: '10px' }}>Раунд #</th>
+                            <th style={{ padding: '10px' }}>Назва Гри</th>
+                            <th style={{ padding: '10px' }}>Статус Раунду</th>
+                            <th style={{ padding: '10px' }}>Учасників</th>
+                            <th style={{ padding: '10px', color: 'green' }}>Passed</th>
+                            <th style={{ padding: '10px', color: 'red' }}>Eliminated</th>
+                            <th style={{ padding: '10px', color: 'orange' }}>Timeout</th>
                         </tr>
-                    ))}
-                    <tr style={{ backgroundColor: '#fafafa', fontWeight: 'bold' }}>
-                        <td style={{ padding: '10px' }}>ВСЬОГО</td>
-                        <td style={{ padding: '10px', textAlign: 'center', color: '#3498db' }}>{stats.sexCounts.MALE}</td>
-                        <td style={{ padding: '10px', textAlign: 'center', color: '#e91e63' }}>{stats.sexCounts.FEMALE}</td>
-                        <td style={{ padding: '10px', textAlign: 'center' }}>{stats.total}</td>
-                    </tr>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {roundsStats.map(round => (
+                            <tr key={round.id}>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{round.roundNumber}</td>
+                                <td style={{ padding: '10px' }}>{round.title || round.gameTitle || 'Game'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{round.status}</td>
+                                <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>
+                                    {round.stats ? round.stats.total : '-'}
+                                </td>
+                                <td style={{ padding: '10px', textAlign: 'center', color: 'green' }}>
+                                    {round.stats ? round.stats.PASSED : '-'}
+                                </td>
+                                <td style={{ padding: '10px', textAlign: 'center', color: 'red' }}>
+                                    {round.stats ? round.stats.ELIMINATED : '-'}
+                                </td>
+                                <td style={{ padding: '10px', textAlign: 'center', color: 'orange' }}>
+                                    {round.stats ? round.stats.TIMEOUT : '-'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : (
+                <p>Раундів не знайдено.</p>
+            )}
         </div>
     );
 };
