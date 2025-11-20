@@ -1,16 +1,55 @@
-# React + Vite
+# Squid Game Vite UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is the frontend part of the "Squid Game" competition management system, built with React and Vite. It provides a user interface for various game participant roles: from players and staff to VIP guests and organizers.
 
-Currently, two official plugins are available:
+The project uses a retro style (inspired by old Reddit and 90s interfaces) to create a unique atmosphere.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Key Features
 
-## React Compiler
+- **Role-Based Access Control:** Interfaces adapt to the user's role (Player, Worker, Host, VIP, Salesman).
+- **Competition Management:** Organizers can create games, manage rounds, and track statistics.
+- **Gameplay:** Players see their status, vote, and interact with the game.
+- **Investments:** VIP users can place bets on players.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Main Links (Routes)
 
-## Expanding the ESLint configuration
+### Public Pages
+- `/login` - System login.
+- `/register` - Registration for new organizers or VIPs.
+- `/join/:refCode` - Player joining via referral code.
+- `/accept-offer/:token` - Accepting a job offer (for staff).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### General
+- `/dashboard` - Main dashboard (redirects to the appropriate interface based on role).
+
+### For Organizers (Host / Frontman)
+- `/competitions` - List of all competitions.
+- `/competitions/:id` - Details of a specific competition (managing rounds, players).
+- `/competitions/:id/statistics` - Competition statistics.
+- `/staff` - Staff management.
+
+### For Players (Player)
+- `/my-game` - Player's personal cabinet (status, voting).
+
+### For Staff (Worker)
+- `/my-tasks` - Worker's task panel.
+
+### For Salesmen (Salesman)
+- `/referral` - Generating referral codes for new players.
+
+### For VIPs
+- `/invest` - Investment and betting panel.
+
+## Project Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Start the local development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open in browser: `http://localhost:5173` (or another port specified in the console).
