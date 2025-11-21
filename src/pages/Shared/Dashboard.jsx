@@ -72,11 +72,18 @@ const Dashboard = () => {
                     gap: '20px'
                 }}>
                     {canManageCompetitions && (
-                        <MenuLink
-                            to="/competitions"
-                            label="COMPETITION CONTROL"
-                            description="Manage games, rounds, and status."
-                        />
+                        <>
+                            <MenuLink
+                                to="/competitions"
+                                label="COMPETITION CONTROL"
+                                description="Manage games, rounds, and status."
+                            />
+                            <MenuLink
+                                to="/reports"
+                                label="GAME REPORTS"
+                                description="Generate printable game reports."
+                            />
+                        </>
                     )}
 
                     {canManageStaff && (

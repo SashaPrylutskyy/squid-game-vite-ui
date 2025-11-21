@@ -22,7 +22,9 @@ import Dashboard from './pages/Shared/Dashboard.jsx';
 import CompetitionListPage from './pages/Host/CompetitionListPage.jsx';
 import CompetitionDetailPage from './pages/Host/CompetitionDetailPage.jsx';
 import CompetitionStatisticsPage from './pages/Host/CompetitionStatisticsPage.jsx';
+
 import StaffPage from './pages/Host/StaffPage.jsx';
+import ReportsPage from './pages/Host/ReportsPage.jsx';
 
 // Сторінки для специфічних ролей
 import PlayerDashboard from './pages/Player/PlayerDashboard.jsx';
@@ -56,6 +58,7 @@ function App() {
                 {/* --- Маршрути для Керівництва (HOST, FRONTMAN, MANAGER, THE_OFFICER) --- */}
                 <Route element={<RoleGuard roles={['HOST', 'FRONTMAN', 'MANAGER', 'THE_OFFICER']} />}>
                     <Route path="/staff" element={<StaffPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
                 </Route>
 
                 {/* --- Маршрути тільки для вищих ролей (HOST, FRONTMAN) --- */}
